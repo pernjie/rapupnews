@@ -23,7 +23,6 @@ Rap Up News automatically:
 1. Clone the repository:
 ```bash
 git clone https://github.com/pernjie/rapupnews.git
-cd rap-up-news
 ```
 
 2. Install required packages:
@@ -32,7 +31,7 @@ pip install -r requirements.txt
 ```
 
 3. Set up configuration files:
-   - Copy `config.json.example` to `config.json` and customize news sources
+   - Create `config.json` and customize news sources
    - Create `keys.txt` with your API keys
    - Set up YouTube credentials:
      - Create a project in Google Cloud Console
