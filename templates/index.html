@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rap Generation Pipeline</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .step button {
+            padding: 5px 10px;
+        }
+        .step.completed {
+            background-color: #e6ffe6;
+        }
+        .step.current {
+            background-color: #fff3e6;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            display: none;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .output-container {
+            margin-top: 10px;
+            display: none;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+        
+        .edit-button {
+            margin-left: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .action-button {
+            margin-top: 10px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            display: none;
+            margin-right: 5px;
+        }
+        
+        .cancel-button {
+            background-color: #f44336;
+        }
+        
+        .output-editor {
+            width: 100%;
+            min-height: 200px;
+            margin-top: 10px;
+            font-family: monospace;
+            display: none;
+        }
+        
+        .reset-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .reset-button:hover {
+            background-color: #c82333;
+        }
+        
+        .step-status {
+            margin-top: 10px;
+            padding: 5px;
+            display: none;
+        }
+        
+        .step-status pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .button-group {
+            margin-bottom: 10px;
+        }
+        
+        .rerun-button {
+            margin-left: 10px;
+            background-color: #ffc107;
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .rerun-button:hover {
+            background-color: #ffb300;
+        }
+        
+        /* Style for rap lyrics display */
+        #output-display-5 {
+            font-family: Arial, sans-serif;  /* More readable font for lyrics */
+            line-height: 1.5;  /* Better line spacing */
+            padding: 15px;  /* More padding */
+        }
+        
+        .collapse-button {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            float: right;
+            font-size: 14px;
+            padding: 5px;
+        }
+        
+        .collapse-button:hover {
+            color: #333;
+        }
+        
+        .collapse-button::before {
+            content: '▼';
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.2s;
+        }
+        
+        .collapse-button.collapsed::before {
+            transform: rotate(-90deg);
+        }
+        
+        .step h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .video-preview {
+            width: 100%;
+            max-width: 640px;
+            margin: 10px 0;
+        }
+        
+        .video-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        .nav-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 200px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .nav-panel h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .nav-panel ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .nav-panel li {
+            margin-bottom: 8px;
+        }
+        
+        .nav-panel a {
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-panel a:hover {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        
+        /* Adjust main content to not overlap with nav panel */
+        .container {
+            margin-right: 240px;
+        }
+        
+        /* Add active state styling */
+        .nav-panel a.active {
+            background-color: #e9ecef;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        #step8-output {
+            margin-top: 10px;
+        }
+        
+        #youtube-url {
+            margin-top: 5px;
+        }
+        
+        #youtube-url a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        #youtube-url a:hover {
+            text-decoration: underline;
+        }
+        
+        .articles-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 10px 0;
+        }
+        
+        .articles-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .articles-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .article-count {
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .article-item {
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .article-item:hover {
+            background: #f8f8f8;
+            border-color: #ddd;
+        }
+        
+        .article-title {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .article-url {
+            font-size: 0.9em;
+            color: #666;
+            word-break: break-all;
+        }
+        
+        .article-url a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .article-url a:hover {
+            text-decoration: underline;
+        }
+        
+        .categories-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 10px 0;
+        }
+        
+        .category-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+        
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .category-name {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #2c3e50;
+            text-transform: capitalize;
+        }
+        
+        .category-count {
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .filtered-articles-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 10px 0;
+        }
+        
+        .filter-category-box {
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .filter-category-header {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #2c3e50;
+            text-transform: capitalize;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .article-checkbox {
+            margin-right: 10px;
+        }
+        
+        .article-selected {
+            background: #e8f5e9;
+        }
+        
+        .save-selection-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .save-selection-btn:hover {
+            background: #45a049;
+        }
+        
+        .filtered-article-item {
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        
+        .filtered-article-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+        
+        .filtered-article-title {
+            font-weight: 500;
+            color: #2c3e50;
+            flex: 1;
+        }
+        
+        .category-tag {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        
+        .filtered-article-explanation {
+            color: #666;
+            font-size: 0.9em;
+            margin: 8px 0;
+            font-style: italic;
+        }
+        
+        .news-summary-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 10px 0;
+        }
+        
+        .news-summary-item {
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .news-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        
+        .news-summary-title {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #2c3e50;
+            flex: 1;
+        }
+        
+        .news-source {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        
+        .news-summary-content {
+            color: #444;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+        
+        .news-summary-image {
+            max-width: 200px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-panel">
+        <h3>Quick Navigation</h3>
+        <ul>
+            <li><a href="#step1">1. Gather Articles</a></li>
+            <li><a href="#step2">2. Categorize Articles</a></li>
+            <li><a href="#step3">3. Filter Articles</a></li>
+            <li><a href="#step4">4. Scrape & Summarize</a></li>
+            <li><a href="#step5">5. Generate Lyrics</a></li>
+            <li><a href="#step6">6. Process Audio</a></li>
+            <li><a href="#step7">7. Generate Video</a></li>
+            <li><a href="#step8">8. Upload to YouTube</a></li>
+        </ul>
+    </div>
+    <h1>Rap Generation Pipeline</h1>
+    <p>Current date: {{ state.date }}</p>
+    
+    <div class="date-selector">
+        <label for="dateSelect">Select Date:</label>
+        <select id="dateSelect" onchange="changeDate(this.value)">
+            {% for date in available_dates %}
+            <option value="{{ date }}" {% if date == selected_date %}selected{% endif %}>
+                {{ date }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div id="step1" class="step-section">
+        <div class="step {% if state.current_step >= 1 %}completed{% endif %} {% if state.current_step == 0 %}current{% endif %}">
+            <h3>
+                Step 1: Gather Articles
+                <button class="collapse-button" onclick="toggleCollapse(1)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(1)" {% if state.current_step >= 1 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 1 %}
+                <button class="edit-button" onclick="toggleEdit(1)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(1)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.articles %}
+                <p>Articles gathered: {{ state.articles|length }}</p>
+            {% endif %}
+            <div class="step-status" id="status-1"></div>
+            <div class="output-container" id="output-1">
+                <div id="step1_output" class="step-output"></div>
+                <pre id="output-display-1"></pre>
+                <textarea class="output-editor" id="output-editor-1"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(1)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(1)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step2" class="step-section">
+        <div class="step {% if state.current_step >= 2 %}completed{% endif %} {% if state.current_step == 1 %}current{% endif %}">
+            <h3>
+                Step 2: Categorize Articles
+                <button class="collapse-button" onclick="toggleCollapse(2)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(2)" {% if state.current_step >= 2 or state.current_step < 1 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 2 %}
+                <button class="edit-button" onclick="toggleEdit(2)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(2)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.categories %}
+                <p>Categories: {{ state.categories.keys()|list }}</p>
+            {% endif %}
+            <div class="step-status" id="status-2"></div>
+            <div class="output-container" id="output-2">
+                <div id="step2_output" class="step-output"></div>
+                <pre id="output-display-2"></pre>
+                <textarea class="output-editor" id="output-editor-2"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(2)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(2)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step3" class="step-section">
+        <div class="step {% if state.current_step >= 3 %}completed{% endif %} {% if state.current_step == 2 %}current{% endif %}">
+            <h3>
+                Step 3: Filter Articles
+                <button class="collapse-button" onclick="toggleCollapse(3)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(3)" {% if state.current_step >= 3 or state.current_step < 2 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 3 %}
+                <button class="edit-button" onclick="toggleEdit(3)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(3)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.filtered_articles %}
+                <p>Filtered articles: {{ state.filtered_articles|length }}</p>
+            {% endif %}
+            <div class="step-status" id="status-3"></div>
+            <div class="output-container" id="output-3">
+                <div id="step3_output" class="step-output"></div>
+                <pre id="output-display-3"></pre>
+                <textarea class="output-editor" id="output-editor-3"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(3)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(3)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step4" class="step-section">
+        <div class="step {% if state.current_step >= 4 %}completed{% endif %} {% if state.current_step == 3 %}current{% endif %}">
+            <h3>
+                Step 4: Scrape and Summarize
+                <button class="collapse-button" onclick="toggleCollapse(4)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(4)" {% if state.current_step >= 4 or state.current_step < 3 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 4 %}
+                <button class="edit-button" onclick="toggleEdit(4)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(4)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.news_summaries %}
+                <p>Summaries generated: {{ state.news_summaries|length }}</p>
+            {% endif %}
+            <div class="step-status" id="status-4"></div>
+            <div class="output-container" id="output-4">
+                <div id="step4_output" class="step-output"></div>
+                <pre id="output-display-4"></pre>
+                <textarea class="output-editor" id="output-editor-4"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(4)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(4)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step5" class="step-section">
+        <div class="step {% if state.current_step >= 5 %}completed{% endif %} {% if state.current_step == 4 %}current{% endif %}">
+            <h3>
+                Step 5: Generate Rap Lyrics
+                <button class="collapse-button" onclick="toggleCollapse(5)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(5)" {% if state.current_step >= 5 or state.current_step < 4 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 5 %}
+                <button class="edit-button" onclick="toggleEdit(5)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(5)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.rap_lyrics %}
+                <p>Lyrics generated!</p>
+            {% endif %}
+            <div class="step-status" id="status-5"></div>
+            <div class="output-container" id="output-5">
+                <pre id="output-display-5"></pre>
+                <textarea class="output-editor" id="output-editor-5"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(5)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(5)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step6" class="step-section">
+        <div class="step {% if state.current_step >= 6 %}completed{% endif %} {% if state.current_step == 5 %}current{% endif %}">
+            <h3>
+                Step 6: Process Audio
+                <button class="collapse-button" onclick="toggleCollapse(6)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(6)" {% if state.current_step >= 6 or state.current_step < 5 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 6 %}
+                <button class="edit-button" onclick="toggleEdit(6)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(6)">Re-run</button>
+                {% endif %}
+            </div>
+            {% if state.word_timestamps %}
+                <p>Audio processed!</p>
+            {% endif %}
+            <div class="step-status" id="status-6"></div>
+            <div class="output-container" id="output-6">
+                <pre id="output-display-6"></pre>
+                <textarea class="output-editor" id="output-editor-6"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(6)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(6)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step7" class="step-section">
+        <div class="step {% if state.current_step >= 7 %}completed{% endif %} {% if state.current_step == 6 %}current{% endif %}">
+            <h3>
+                Step 7: Generate Video
+                <button class="collapse-button" onclick="toggleCollapse(7)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(7)" {% if state.current_step >= 7 or state.current_step < 6 %}disabled{% endif %}>Execute</button>
+                {% if state.current_step >= 7 %}
+                <button class="edit-button" onclick="toggleEdit(7)">Edit</button>
+                <button class="rerun-button" onclick="rerunStep(7)">Re-run</button>
+                {% endif %}
+            </div>
+            <div class="step-status" id="status-7"></div>
+            <div class="output-container" id="output-7">
+                <pre id="output-display-7"></pre>
+                <textarea class="output-editor" id="output-editor-7"></textarea>
+                <div>
+                    <button class="action-button" onclick="saveEdit(7)">Save Changes</button>
+                    <button class="action-button cancel-button" onclick="cancelEdit(7)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step8" class="step-section">
+        <div class="step {% if state.current_step >= 8 %}completed{% endif %} {% if state.current_step == 7 %}current{% endif %}">
+            <h3>
+                Step 8: Upload to YouTube
+                <button class="collapse-button" onclick="toggleCollapse(8)">Toggle Preview</button>
+            </h3>
+            <div class="button-group">
+                <button onclick="executeStep(8)" {% if state.current_step >= 8 or state.current_step < 7 %}disabled{% endif %}>Upload to YouTube</button>
+                {% if state.current_step >= 8 %}
+                <button class="rerun-button" onclick="rerunStep(8)">Re-run</button>
+                {% endif %}
+            </div>
+            <div class="step-status" id="status-8"></div>
+            <div class="output-container" id="output-8">
+                <div id="youtube-status">Not uploaded yet</div>
+                <div id="youtube-url"></div>
+                <pre id="output-display-8"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="reset-container" style="margin: 20px;">
+        <button onclick="resetPipeline()" class="reset-button">Reset Pipeline</button>
+    </div>
+
+    {% if not youtube_creds_valid %}
+    <div class="alert alert-warning">
+        <h4>YouTube Upload Not Ready</h4>
+        <p>{{ youtube_creds_message }}</p>
+        <p>To enable YouTube uploads:</p>
+        <ol>
+            <li>Set up a project in Google Cloud Console</li>
+            <li>Enable the YouTube Data API v3</li>
+            <li>Create OAuth 2.0 credentials</li>
+            <li>Download and rename the credentials file to 'client_secrets.json'</li>
+            <li>Place it in the project root directory</li>
+        </ol>
+    </div>
+    {% endif %}
+
+    <div id="quota-error" class="alert alert-warning" style="display: none;">
+        <h4>YouTube API Quota Exceeded</h4>
+        <p>The daily API quota has been exceeded. Please try again tomorrow or request a quota increase.</p>
+        <p>To request a quota increase:</p>
+        <ol>
+            <li>Go to Google Cloud Console</li>
+            <li>Select your project</li>
+            <li>Go to APIs & Services > YouTube Data API v3</li>
+            <li>Click on "Quotas"</li>
+            <li>Click "EDIT QUOTAS" and follow the instructions</li>
+        </ol>
+    </div>
+
+    <script>
+        // Make state available to JavaScript
+        const state = {{ state|tojson }};
+        
+        function changeDate(date) {
+            window.location.href = '/?date=' + date;
+        }
+
+        function executeStep(step) {
+            const selectedDate = document.getElementById('dateSelect').value;
+            const stepStatus = document.getElementById(`status-${step}`);
+            stepStatus.style.display = 'block';
+            stepStatus.innerHTML = '<p class="processing">Processing...</p>';
+            stepStatus.className = 'step-status';
+
+            fetch(`/step/${step}?date=${selectedDate}`, {
+                method: 'POST'
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(JSON.stringify(data, null, 2));
+                }
+                return data;
+            })
+            .then(data => {
+                stepStatus.innerHTML = `<p class="success">${data.message}</p>`;
+                displayStepOutput(step, data);
+                location.reload();
+            })
+            .catch(error => {
+                let errorMessage;
+                try {
+                    const errorData = JSON.parse(error.message);
+                    if (errorData.error === 'YouTube API quota exceeded') {
+                        document.getElementById('quota-error').style.display = 'block';
+                    }
+                    errorMessage = `<p class="error">Error:</p><pre>${JSON.stringify(errorData, null, 2)}</pre>`;
+                } catch {
+                    errorMessage = `<p class="error">Error:</p><pre>${error.message}</pre>`;
+                }
+                stepStatus.innerHTML = errorMessage;
+            });
+        }
+
+        function displayStepOutput(step, data) {
+            const selectedDate = document.getElementById('dateSelect').value;
+            fetch(`/get_step_output/${step}?date=${selectedDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById(`output-${step}`);
+                    const display = document.getElementById(`output-display-${step}`);
+                    const editor = document.getElementById(`output-editor-${step}`);
+                    const button = container.parentElement.querySelector('.collapse-button');
+                    
+                    let formattedOutput;
+                    if (step === 1) {
+                        displayStep1Output(data);
+                        formattedOutput = JSON.stringify(data, null, 2);
+                    } else if (step === 2) {
+                        displayStep2Output(data);
+                        formattedOutput = JSON.stringify(data, null, 2);
+                    } else if (step === 3) {
+                        // Combine categories from step 2 with filtered articles from step 3
+                        const combinedData = {
+                            categories: state.categories || {},
+                            filtered_articles: data.filtered_articles || []
+                        };
+                        displayStep3Output(combinedData);
+                        formattedOutput = JSON.stringify(data, null, 2);
+                    } else if (step === 4) {
+                        displayStep4Output(data);
+                        formattedOutput = JSON.stringify(data, null, 2);
+                    } else if (step === 5) {
+                        formattedOutput = data;
+                        display.style.whiteSpace = 'pre-line';
+                    } else if (step === 7 && data.video_path) {
+                        const videoFilename = data.video_path.split('/').pop();
+                        display.innerHTML = `
+                            <div class="video-container">
+                                <video class="video-preview" controls>
+                                    <source src="/video/${videoFilename}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <p>Video path: ${data.video_path}</p>
+                            </div>
+                        `;
+                    } else if (step === 8) {
+                        const outputDiv = document.getElementById('step8-output');
+                        if (data.youtube_url) {
+                            document.getElementById('youtube-status').innerHTML = 'Upload complete!';
+                            document.getElementById('youtube-url').innerHTML = 
+                                `<a href="${data.youtube_url}" target="_blank">View on YouTube</a>`;
+                        } else {
+                            document.getElementById('youtube-status').innerHTML = 'Not uploaded yet';
+                            document.getElementById('youtube-url').innerHTML = '';
+                        }
+                    } else {
+                        formattedOutput = JSON.stringify(data, null, 2);
+                        display.style.whiteSpace = 'pre-wrap';
+                    }
+                    
+                    if (step !== 1 && step !== 2 && step !== 3 && step !== 4 && step !== 7) {
+                        display.textContent = formattedOutput;
+                    }
+                    
+                    editor.value = JSON.stringify(data, null, 2);
+                    
+                    if (!button.classList.contains('collapsed')) {
+                        container.style.display = 'block';
+                    }
+                    
+                    if (step === 1) {
+                        document.getElementById('step1_output').style.display = 'block';
+                        if (display) display.style.display = 'none';
+                    } else if (step === 2) {
+                        document.getElementById('step2_output').style.display = 'block';
+                        if (display) display.style.display = 'none';
+                    } else if (step === 3) {
+                        document.getElementById('step3_output').style.display = 'block';
+                        if (display) display.style.display = 'none';
+                    } else if (step === 4) {
+                        document.getElementById('step4_output').style.display = 'block';
+                        if (display) display.style.display = 'none';
+                    } else {
+                        if (display) display.style.display = 'block';
+                    }
+                    editor.style.display = 'none';
+                });
+        }
+
+        function toggleEdit(step) {
+            const display = document.getElementById(`output-display-${step}`);
+            const editor = document.getElementById(`output-editor-${step}`);
+            const actionButtons = editor.nextElementSibling.getElementsByClassName('action-button');
+            const customDisplay = document.getElementById(`step${step}_output`);
+            
+            if (editor.style.display === 'none') {
+                display.style.display = 'none';
+                if (customDisplay) customDisplay.style.display = 'none';
+                editor.style.display = 'block';
+                Array.from(actionButtons).forEach(button => button.style.display = 'inline-block');
+            } else {
+                display.style.display = 'block';
+                if (customDisplay) customDisplay.style.display = 'block';
+                editor.style.display = 'none';
+                Array.from(actionButtons).forEach(button => button.style.display = 'none');
+            }
+        }
+
+        function saveEdit(step) {
+            const editor = document.getElementById(`output-editor-${step}`);
+            const content = editor.value;
+            
+            try {
+                if (step === 5) {
+                    fetch(`/update_step_output/${step}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(content)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(`Error: ${data.error}`);
+                        } else {
+                            displayStepOutput(step, data);
+                            alert('Changes saved successfully!');
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        alert(`Error: ${error}`);
+                    });
+                } else {
+                    const parsedContent = JSON.parse(content);
+                    
+                    fetch(`/update_step_output/${step}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: content
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(`Error: ${data.error}`);
+                        } else {
+                            displayStepOutput(step, data);
+                            alert('Changes saved successfully!');
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        alert(`Error: ${error}`);
+                    });
+                }
+            } catch (e) {
+                alert('Invalid format. Please check your edits.');
+            }
+        }
+
+        function cancelEdit(step) {
+            const display = document.getElementById(`output-display-${step}`);
+            const editor = document.getElementById(`output-editor-${step}`);
+            const actionButtons = editor.nextElementSibling.getElementsByClassName('action-button');
+            const customDisplay = document.getElementById(`step${step}_output`);
+            
+            display.style.display = 'block';
+            if (customDisplay) {
+                customDisplay.style.display = 'block';
+                // Re-display the content using the current state
+                if (step === 1) {
+                    displayStep1Output(state);
+                } else if (step === 2) {
+                    displayStep2Output(state);
+                } else if (step === 3) {
+                    displayStep3Output({
+                        categories: state.categories || {},
+                        filtered_articles: state.filtered_articles || []
+                    });
+                } else if (step === 4) {
+                    displayStep4Output(state);
+                }
+            }
+            editor.style.display = 'none';
+            Array.from(actionButtons).forEach(button => button.style.display = 'none');
+            
+            // Set editor value based on the step's data in state
+            if (step === 1) {
+                editor.value = JSON.stringify({ articles: state.articles }, null, 2);
+            } else if (step === 2) {
+                editor.value = JSON.stringify({ categories: state.categories }, null, 2);
+            } else if (step === 3) {
+                editor.value = JSON.stringify({ filtered_articles: state.filtered_articles }, null, 2);
+            } else if (step === 4) {
+                editor.value = JSON.stringify({ news_summaries: state.news_summaries }, null, 2);
+            } else {
+                editor.value = display.textContent;
+            }
+        }
+
+        function resetPipeline() {
+            if (confirm('Are you sure you want to reset the pipeline? This will clear all progress.')) {
+                fetch('/reset', {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Pipeline reset successfully');
+                        location.reload();
+                    } else {
+                        alert('Error resetting pipeline: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting pipeline');
+                });
+            }
+        }
+
+        function rerunStep(step) {
+            if (confirm(`Are you sure you want to re-run step ${step}? This will reset all subsequent steps.`)) {
+                fetch('/reset_to_step', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ step: step - 1 })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        executeStep(step);
+                    } else {
+                        alert('Error resetting pipeline: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting pipeline');
+                });
+            }
+        }
+
+        function toggleCollapse(step) {
+            const container = document.getElementById(`output-${step}`);
+            const button = event.currentTarget;
+            
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                button.classList.remove('collapsed');
+            } else {
+                container.style.display = 'none';
+                button.classList.add('collapsed');
+            }
+            
+            event.stopPropagation();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentState = {{ state|tojson }};
+            for (let i = 1; i <= currentState.current_step; i++) {
+                displayStepOutput(i, currentState);
+            }
+        });
+
+        document.querySelectorAll('.nav-panel a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            });
+        });
+
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.step-section');
+            const navLinks = document.querySelectorAll('.nav-panel a');
+            
+            let currentSection = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === currentSection) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        function displayStep1Output(data) {
+            const outputDiv = document.getElementById('step1_output');
+            const articles = data.articles;
+            
+            let html = `
+                <div class="articles-container">
+                    <div class="articles-header">
+                        <h3>Gathered Articles</h3>
+                        <span class="article-count">${articles.length} articles</span>
+                    </div>
+                    <div class="articles-list">
+            `;
+            
+            articles.forEach((article, index) => {
+                html += `
+                    <div class="article-item">
+                        <div class="article-title">${index + 1}. ${escapeHtml(article.title)}</div>
+                        <div class="article-url">
+                            <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">
+                                ${formatUrl(article.url)}
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            outputDiv.innerHTML = html;
+        }
+
+        function displayStep2Output(data) {
+            const outputDiv = document.getElementById('step2_output');
+            const categories = data.categories;
+            
+            let html = '<div class="categories-container">';
+            
+            for (const [category, articles] of Object.entries(categories)) {
+                html += `
+                    <div class="category-box">
+                        <div class="category-header">
+                            <div class="category-name">${category}</div>
+                            <div class="category-count">${articles.length} articles</div>
+                        </div>
+                        <div class="category-articles">
+                `;
+                
+                articles.forEach((article, index) => {
+                    html += `
+                        <div class="article-item">
+                            <div class="article-title">${index + 1}. ${escapeHtml(article.title)}</div>
+                            <div class="article-url">
+                                <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">
+                                    ${formatUrl(article.url)}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            outputDiv.innerHTML = html;
+        }
+
+        function displayStep3Output(data) {
+            const outputDiv = document.getElementById('step3_output');
+            const categories = data.categories || {};
+            const filteredArticles = data.filtered_articles || [];
+            
+            // Create a set of selected article URLs for easy lookup
+            const selectedUrls = new Set(filteredArticles.map(article => article.url));
+            
+            let html = `
+                <div class="filtered-articles-container">
+                    <div class="articles-header">
+                        <h3>Select Articles for Each Category</h3>
+                        <button class="save-selection-btn" onclick="saveArticleSelection()">Save Selection</button>
+                    </div>
+            `;
+            
+            // Display each category and its articles
+            for (const [category, articles] of Object.entries(categories)) {
+                html += `
+                    <div class="filter-category-box">
+                        <div class="filter-category-header">
+                            ${category} (${articles.length} articles)
+                        </div>
+                        <div class="category-articles">
+                `;
+                
+                articles.forEach((article, index) => {
+                    const isSelected = selectedUrls.has(article.url);
+                    html += `
+                        <div class="article-item ${isSelected ? 'article-selected' : ''}">
+                            <input type="checkbox" 
+                                   class="article-checkbox" 
+                                   data-category="${category}"
+                                   data-url="${escapeHtml(article.url)}"
+                                   data-title="${escapeHtml(article.title)}"
+                                   ${isSelected ? 'checked' : ''}>
+                            <div class="article-title">${index + 1}. ${escapeHtml(article.title)}</div>
+                            <div class="article-url">
+                                <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">
+                                    ${formatUrl(article.url)}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            outputDiv.innerHTML = html;
+            
+            // Add event listeners for checkboxes to update highlighting
+            document.querySelectorAll('.article-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const articleItem = this.closest('.article-item');
+                    articleItem.classList.toggle('article-selected', this.checked);
+                });
+            });
+        }
+
+        // Add this new function to handle saving the selection
+        function saveArticleSelection() {
+            const selectedArticles = [];
+            document.querySelectorAll('.article-checkbox:checked').forEach(checkbox => {
+                selectedArticles.push({
+                    category: checkbox.dataset.category,
+                    url: checkbox.dataset.url,
+                    title: checkbox.dataset.title
+                });
+            });
+            
+            // Update the state through the API
+            fetch(`/update_step_output/3`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filtered_articles: selectedArticles
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    alert('Selection saved successfully!');
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                alert(`Error: ${error}`);
+            });
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                return (urlObj.hostname.replace(/^www\./, '') + urlObj.pathname).slice(0, 50) + 
+                       (urlObj.pathname.length > 50 ? '...' : '');
+            } catch (e) {
+                return url.slice(0, 50) + (url.length > 50 ? '...' : '');
+            }
+        }
+
+        function displayStep4Output(data) {
+            const outputDiv = document.getElementById('step4_output');
+            const summaries = data.news_summaries || [];
+            
+            let html = `
+                <div class="news-summary-container">
+                    <div class="articles-header">
+                        <h3>News Summaries</h3>
+                        <span class="article-count">${summaries.length} articles</span>
+                    </div>
+                    <div class="news-summaries-list">
+            `;
+            
+            summaries.forEach((summary, index) => {
+                html += `
+                    <div class="news-summary-item">
+                        <div class="news-summary-header">
+                            <div class="news-summary-title">${index + 1}. ${escapeHtml(summary.title)}</div>
+                            <span class="news-source">${escapeHtml(summary.news_source || 'Unknown Source')}</span>
+                        </div>
+                        <div class="news-summary-content">${escapeHtml(summary.content)}</div>
+                        ${summary.image_url && summary.image_url !== 'TODO' 
+                            ? `<img class="news-summary-image" src="${escapeHtml(summary.image_url)}" alt="Article image">` 
+                            : ''}
+                        <div class="article-url">
+                            <a href="${escapeHtml(summary.url)}" target="_blank" rel="noopener noreferrer">
+                                ${formatUrl(summary.url)}
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            outputDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
